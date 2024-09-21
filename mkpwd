@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+
+import random
+import string
+import argparse
+import pyperclip
+import os
+
+# Function to load words from a file
+def load_words(filename):
+    if not os.path.exists(filename):
+        print(f"Error: {filename} not found!")
+        return []
+    with open(filename, 'r') as file:
+        words = file.read().splitlines()
+    if not words:
+        print(f"Error: {filename} is empty!")
+    return words
+
+# Function to check if a word starts with a vowel sound for proper article usage
+def starts_with_vowel_sound(word):
+    return word[0].lower() in 'aeiou'
+
+# Function to pluralize a noun by adding 's'
+def pluralize_noun(noun):
+    return noun + 's'
+
+# Generate random password
+def generate_password(length):
+    characters = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(random.choice(characters) for _ in range(length))
+
+# Generate random passphrase
+def generate_passphrase(articles, adjectives, nouns, verbs, adverbs, punctuations):
+    phrase_type = random.choice([1, 2])
+    if phrase_type == 1:
+        # Format: [Article] [Adjective] [Noun] [Punctuation]
+        article = random.choice(articles).lower()
+        adjective = random.choice(adjectives).lower()
+        noun = random.choice(nouns).lower()
+
+        # Ensure correct article (a/an)
+        if article in ['a', 'an']:
+            article = 'an' if starts_with_vowel_sound(adjective) else 'a'
+        
+        # Pluralize the noun if "some" is selected
+        if article == 'some':
+            noun = pluralize_noun(noun)
+
+        # Capitalize first word (article), make everything else lowercase
+        phrase = f"{article.capitalize()} {adjective} {noun}{random.choice(punctuations)}"
+    else:
+        # Format: To [Verb] [Adverb] [Punctuation]
+        verb = random.choice(verbs).lower()
+        adverb = random.choice(adverbs).lower()
+        phrase = f"To {verb} {adverb}{random.choice(punctuations)}"
+    
+    return phrase
+
+# Main function
+def main():
+    parser = argparse.ArgumentParser(description="Generate random passwords or passphrases.")
+    parser.add_argument("-p", "--phrase", action="store_true", help="Generate a passphrase instead of a password")
+    parser.add_argument("-l", "--length", type=int, default=8, help="Length of the password (default: 8)")
+    parser.add_argument("-c", "--copy", action="store_true", help="Copy the result to clipboard")
+    
+    args = parser.parse_args()
+
+    # Load words from files
+    articles = load_words('articles.txt')
+    adjectives = load_words('adjectives.txt')
+    nouns = load_words('nouns.txt')
+    verbs = load_words('verbs.txt')
+    adverbs = load_words('adverbs.txt')
+    punctuations = ['.', '!', '?']
+
+    if args.phrase:
+        if not articles or not adjectives or not nouns or not verbs or not adverbs:
+            print("Error: One or more word files are missing or empty!")
+            return
+        result = generate_passphrase(articles, adjectives, nouns, verbs, adverbs, punctuations)
+    else:
+        result = generate_password(args.length)
+
+    print(f"Generated: {result}")
+
+    if args.copy:
+        pyperclip.copy(result)
+        print("Copied to clipboard.")
+
+if __name__ == "__main__":
+    main()
