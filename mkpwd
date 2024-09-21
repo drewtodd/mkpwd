@@ -135,7 +135,11 @@ def main():
         # Clear the screen before printing the result
         clear_screen()
 
+        # Print the generated result
         print(f"Generated: {result}")
+
+        # Print the number of characters in the result
+        print(f"Length: {len(result)}\n")
 
         if args.copy:
             pyperclip.copy(result)
