@@ -49,51 +49,55 @@ def load_words_from_single_file(filename):
             if current_category:
                 word_categories[current_category].append(line)
 
+    print(f"Loaded word categories: {word_categories}")
     return word_categories
 
 # Function to check if a word starts with a vowel sound for proper article usage
 def starts_with_vowel_sound(word):
     return word[0].lower() in 'aeiou'
 
-# Function to pluralize a noun by adding 's'
-def pluralize_noun(noun):
-    return noun + 's'
+# Function to pluralize verbs by adding 's'
+def pluralize_verb(verb):
+    return verb + 's' if not verb.endswith('s') else verb
 
 # Generate random password
 def generate_password(length):
+    print(f"Generating password of length {length}")
     characters = string.ascii_letters + string.digits + string.punctuation
     return ''.join(random.choice(characters) for _ in range(length))
 
-# Generate random passphrase
+# Generate random passphrase with a two-digit number
 def generate_passphrase(articles, adjectives, nouns, verbs, adverbs, punctuations):
+    # Randomly choose the structure
     phrase_type = random.choice([1, 2])
+
+    # Randomly choose where to place the two-digit number (beginning or end)
+    number_position = random.choice(["beginning", "end"])
+    number = str(random.randint(10, 99))
+
+    # Choose words for the passphrase
+    article = random.choice(articles).lower()
+    adjective = random.choice(adjectives).lower()
+    noun = random.choice(nouns).lower()
+    verb = pluralize_verb(random.choice(verbs).lower())
+    adverb = random.choice(adverbs).lower()
+
+    # Ensure correct article (a/an)
+    if article in ['a', 'an']:
+        article = 'an' if starts_with_vowel_sound(adjective) else 'a'
+
+    # Randomly swap [verb] and [adverb]
     if phrase_type == 1:
-        # Format: [Article] [Adjective] [Noun] [Punctuation]
-        article = random.choice(articles).lower()
-        adjective = random.choice(adjectives).lower()
-        noun = random.choice(nouns).lower()
-
-        # Ensure correct article (a/an)
-        if article in ['a', 'an']:
-            article = 'an' if starts_with_vowel_sound(adjective) else 'a'
-        
-        # Pluralize the noun if "some" is selected
-        if article == 'some':
-            noun = pluralize_noun(noun)
-
-        # Capitalize first word (article), make everything else lowercase
-        phrase = f"{article.capitalize()} {adjective} {noun}{random.choice(punctuations)}"
+        phrase = f"{article.capitalize()} {adjective} {noun} {adverb} {verb}"
     else:
-        # Format: To [Verb] [Adverb] or To [Adverb] [Verb] [Punctuation]
-        verb = random.choice(verbs).lower()
-        adverb = random.choice(adverbs).lower()
+        phrase = f"{article.capitalize()} {adjective} {noun} {verb} {adverb}"
 
-        # Randomly choose to put the adverb before or after the verb
-        if random.choice([True, False]):
-            phrase = f"To {adverb} {verb}{random.choice(punctuations)}"
-        else:
-            phrase = f"To {verb} {adverb}{random.choice(punctuations)}"
-    
+    # Add the two-digit number to the beginning or the end
+    if number_position == "beginning":
+        phrase = f"{number} {phrase}"
+    else:
+        phrase = f"{phrase} {number}"
+
     return phrase
 
 # Custom error handling for invalid arguments
@@ -107,7 +111,7 @@ def main():
     try:
         parser = argparse.ArgumentParser(description="Generate random passwords or passphrases.")
         parser.add_argument("-p", "--phrase", action="store_true", help="Generate a passphrase instead of a password")
-        parser.add_argument("-l", "--length", type=int, default=8, help="Length of the password (default: 8)")
+        parser.add_argument("-l", "--length", type=int, default=24, help="Length of the password (default: 24)")
         parser.add_argument("-c", "--copy", action="store_true", help="Copy the result to clipboard")
         
         args = parser.parse_args()
@@ -123,13 +127,15 @@ def main():
         adverbs = word_categories["adverbs"]
         punctuations = ['.', '!', '?']
 
+        print(f"Args: {args}")
+
         if args.phrase:
-            if not articles or not adjectives or not nouns or not verbs or not adverbs:
-                handle_invalid_arguments("One or more word categories are missing or empty!")
+            print("Generating passphrase...")
             result = generate_passphrase(articles, adjectives, nouns, verbs, adverbs, punctuations)
         else:
             if args.length <= 0:
                 handle_invalid_arguments("Password length must be greater than zero.")
+            print("Generating password...")
             result = generate_password(args.length)
 
         # Clear the screen before printing the result
