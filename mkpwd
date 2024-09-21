@@ -7,6 +7,13 @@ import pyperclip
 import os
 import sys
 
+# Function to clear the screen
+def clear_screen():
+    if os.name == 'nt':  # For Windows
+        os.system('cls')
+    else:  # For macOS/Linux
+        os.system('clear')
+
 # Function to load words from the single file
 def load_words_from_single_file(filename):
     word_categories = {
@@ -57,7 +64,6 @@ def generate_password(length):
     characters = string.ascii_letters + string.digits + string.punctuation
     return ''.join(random.choice(characters) for _ in range(length))
 
-# Generate random passphrase
 # Generate random passphrase
 def generate_passphrase(articles, adjectives, nouns, verbs, adverbs, punctuations):
     phrase_type = random.choice([1, 2])
@@ -125,6 +131,9 @@ def main():
             if args.length <= 0:
                 handle_invalid_arguments("Password length must be greater than zero.")
             result = generate_password(args.length)
+
+        # Clear the screen before printing the result
+        clear_screen()
 
         print(f"Generated: {result}")
 
