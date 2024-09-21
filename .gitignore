@@ -1,0 +1,7 @@
+# Ignore virtual environments
+venv/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
