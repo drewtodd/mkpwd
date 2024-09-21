@@ -5,17 +5,44 @@ import string
 import argparse
 import pyperclip
 import os
+import sys
 
-# Function to load words from a file
-def load_words(filename):
+# Function to load words from the single file
+def load_words_from_single_file(filename):
+    word_categories = {
+        "articles": [],
+        "adjectives": [],
+        "nouns": [],
+        "verbs": [],
+        "adverbs": []
+    }
+
     if not os.path.exists(filename):
         print(f"Error: {filename} not found!")
-        return []
+        sys.exit(1)
+
     with open(filename, 'r') as file:
-        words = file.read().splitlines()
-    if not words:
-        print(f"Error: {filename} is empty!")
-    return words
+        current_category = None
+
+        for line in file:
+            line = line.strip()
+
+            # Skip empty lines
+            if not line:
+                continue
+
+            # Identify category headers and set the current category
+            if line.startswith("[") and line.endswith("]"):
+                category = line[1:-1].lower()
+                if category in word_categories:
+                    current_category = category
+                continue
+
+            # Add words to the current category
+            if current_category:
+                word_categories[current_category].append(line)
+
+    return word_categories
 
 # Function to check if a word starts with a vowel sound for proper article usage
 def starts_with_vowel_sound(word):
@@ -30,6 +57,7 @@ def generate_password(length):
     characters = string.ascii_letters + string.digits + string.punctuation
     return ''.join(random.choice(characters) for _ in range(length))
 
+# Generate random passphrase
 # Generate random passphrase
 def generate_passphrase(articles, adjectives, nouns, verbs, adverbs, punctuations):
     phrase_type = random.choice([1, 2])
@@ -50,43 +78,62 @@ def generate_passphrase(articles, adjectives, nouns, verbs, adverbs, punctuation
         # Capitalize first word (article), make everything else lowercase
         phrase = f"{article.capitalize()} {adjective} {noun}{random.choice(punctuations)}"
     else:
-        # Format: To [Verb] [Adverb] [Punctuation]
+        # Format: To [Verb] [Adverb] or To [Adverb] [Verb] [Punctuation]
         verb = random.choice(verbs).lower()
         adverb = random.choice(adverbs).lower()
-        phrase = f"To {verb} {adverb}{random.choice(punctuations)}"
+
+        # Randomly choose to put the adverb before or after the verb
+        if random.choice([True, False]):
+            phrase = f"To {adverb} {verb}{random.choice(punctuations)}"
+        else:
+            phrase = f"To {verb} {adverb}{random.choice(punctuations)}"
     
     return phrase
 
+# Custom error handling for invalid arguments
+def handle_invalid_arguments(error_msg):
+    print(f"Error: {error_msg}")
+    print("\nUse the `-h` or `--help` flag for usage information.")
+    sys.exit(1)
+
 # Main function
 def main():
-    parser = argparse.ArgumentParser(description="Generate random passwords or passphrases.")
-    parser.add_argument("-p", "--phrase", action="store_true", help="Generate a passphrase instead of a password")
-    parser.add_argument("-l", "--length", type=int, default=8, help="Length of the password (default: 8)")
-    parser.add_argument("-c", "--copy", action="store_true", help="Copy the result to clipboard")
-    
-    args = parser.parse_args()
+    try:
+        parser = argparse.ArgumentParser(description="Generate random passwords or passphrases.")
+        parser.add_argument("-p", "--phrase", action="store_true", help="Generate a passphrase instead of a password")
+        parser.add_argument("-l", "--length", type=int, default=8, help="Length of the password (default: 8)")
+        parser.add_argument("-c", "--copy", action="store_true", help="Copy the result to clipboard")
+        
+        args = parser.parse_args()
 
-    # Load words from files
-    articles = load_words('articles.txt')
-    adjectives = load_words('adjectives.txt')
-    nouns = load_words('nouns.txt')
-    verbs = load_words('verbs.txt')
-    adverbs = load_words('adverbs.txt')
-    punctuations = ['.', '!', '?']
+        # Load words from the single file
+        word_file = 'words.txt'
+        word_categories = load_words_from_single_file(word_file)
 
-    if args.phrase:
-        if not articles or not adjectives or not nouns or not verbs or not adverbs:
-            print("Error: One or more word files are missing or empty!")
-            return
-        result = generate_passphrase(articles, adjectives, nouns, verbs, adverbs, punctuations)
-    else:
-        result = generate_password(args.length)
+        articles = word_categories["articles"]
+        adjectives = word_categories["adjectives"]
+        nouns = word_categories["nouns"]
+        verbs = word_categories["verbs"]
+        adverbs = word_categories["adverbs"]
+        punctuations = ['.', '!', '?']
 
-    print(f"Generated: {result}")
+        if args.phrase:
+            if not articles or not adjectives or not nouns or not verbs or not adverbs:
+                handle_invalid_arguments("One or more word categories are missing or empty!")
+            result = generate_passphrase(articles, adjectives, nouns, verbs, adverbs, punctuations)
+        else:
+            if args.length <= 0:
+                handle_invalid_arguments("Password length must be greater than zero.")
+            result = generate_password(args.length)
 
-    if args.copy:
-        pyperclip.copy(result)
-        print("Copied to clipboard.")
+        print(f"Generated: {result}")
+
+        if args.copy:
+            pyperclip.copy(result)
+            print("Copied to clipboard.")
+
+    except Exception as e:
+        handle_invalid_arguments(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
     main()
